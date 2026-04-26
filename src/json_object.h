@@ -110,12 +110,24 @@ class JsonObject : public DispatchBase {
         case VT_EMPTY: return yyjson_mut_null(doc);
         case VT_DISPATCH: {
             if (v.pdispVal) {
+                // Identify JsonObject via IProvideClassInfo → GetClassInfo → GetDocumentation.
+                // Must check type name BEFORE static_cast — other COM objects (Dictionary)
+                // also implement IProvideClassInfo and an invalid cast crashes the process.
                 IProvideClassInfo* pci = nullptr;
                 if (SUCCEEDED(v.pdispVal->QueryInterface(IID_IProvideClassInfo, (void**)&pci))) {
+                    bool isJsonObject = false;
+                    ITypeInfo* ti = nullptr;
+                    if (SUCCEEDED(pci->GetClassInfo(&ti)) && ti) {
+                        BSTR name = nullptr;
+                        if (SUCCEEDED(ti->GetDocumentation(MEMBERID_NIL, &name, nullptr, nullptr, nullptr)) && name) {
+                            isJsonObject = (wcscmp(name, L"JsonObject") == 0);
+                            SysFreeString(name);
+                        }
+                        ti->Release();
+                    }
                     pci->Release();
-                    DispatchBase* base = static_cast<DispatchBase*>(v.pdispVal);
-                    if (wcscmp(base->GetClassName(), L"JsonObject") == 0) {
-                        auto* jobj = static_cast<JsonObject*>(base);
+                    if (isJsonObject) {
+                        auto* jobj = static_cast<JsonObject*>(static_cast<DispatchBase*>(v.pdispVal));
                         if (jobj->m_val)
                             return yyjson_mut_val_mut_copy(doc, jobj->m_val);
                     }
