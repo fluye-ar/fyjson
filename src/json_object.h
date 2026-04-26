@@ -256,13 +256,19 @@ class JsonObject : public DispatchBase {
             return yyjson_mut_arr_add_val(m_val, jval) ? S_OK : E_FAIL;
         }
         if (yyjson_mut_is_obj(m_val)) {
+            // Add(key, val) — Dictionary-compatible: obj.Add "key", val
             if (args.size() < 2) return E_INVALIDARG;
             std::string k = ToUtf8(VariantToString(args[0]));
             yyjson_mut_doc* doc = Doc();
-            yyjson_mut_val* jkey = yyjson_mut_strncpy(doc, k.c_str(), k.size());
             yyjson_mut_val* jval = VariantToVal(args[1]);
-            if (!jkey || !jval) return E_FAIL;
-            return yyjson_mut_obj_add(m_val, jkey, jval) ? S_OK : E_FAIL;
+            if (!jval) return E_FAIL;
+            // Case-insensitive: reuse existing key if found
+            yyjson_mut_val* existingKey = ObjFindKeyI(m_val, k.c_str());
+            if (existingKey)
+                return yyjson_mut_obj_put(m_val, existingKey, jval) ? S_OK : E_FAIL;
+            yyjson_mut_val* jkey = yyjson_mut_strncpy(doc, k.c_str(), k.size());
+            if (!jkey) return E_FAIL;
+            return yyjson_mut_obj_put(m_val, jkey, jval) ? S_OK : E_FAIL;
         }
         return DISP_E_TYPEMISMATCH;
     }
