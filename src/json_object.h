@@ -31,6 +31,70 @@ class JsonObject : public DispatchBase {
 
     yyjson_mut_doc* Doc() const { return m_root ? m_root->m_doc : m_doc; }
 
+    // ── IDispatch helpers for calling methods on foreign COM objects ─────
+
+    // Call a method/property by name on an IDispatch, no args, returns VARIANT
+    static HRESULT DispGet(IDispatch* disp, const wchar_t* name, VARIANT& out) {
+        DISPID id;
+        OLECHAR* n = const_cast<OLECHAR*>(name);
+        HRESULT hr = disp->GetIDsOfNames(IID_NULL, &n, 1, LOCALE_USER_DEFAULT, &id);
+        if (FAILED(hr)) return hr;
+        DISPPARAMS dp = {nullptr, nullptr, 0, 0};
+        return disp->Invoke(id, IID_NULL, LOCALE_USER_DEFAULT, DISPATCH_PROPERTYGET | DISPATCH_METHOD, &dp, &out, nullptr, nullptr);
+    }
+
+    // Call Item(key) on a Dictionary IDispatch
+    static HRESULT DispGetItem(IDispatch* disp, VARIANT& key, VARIANT& out) {
+        DISPID id;
+        OLECHAR* n = L"Item";
+        HRESULT hr = disp->GetIDsOfNames(IID_NULL, &n, 1, LOCALE_USER_DEFAULT, &id);
+        if (FAILED(hr)) return hr;
+        DISPPARAMS dp = {&key, nullptr, 1, 0};
+        return disp->Invoke(id, IID_NULL, LOCALE_USER_DEFAULT, DISPATCH_PROPERTYGET | DISPATCH_METHOD, &dp, &out, nullptr, nullptr);
+    }
+
+    // Convert Scripting.Dictionary → yyjson_mut_val* (JSON object), recursive
+    yyjson_mut_val* DictToVal(IDispatch* disp) {
+        yyjson_mut_doc* doc = Doc();
+        yyjson_mut_val* obj = yyjson_mut_obj(doc);
+
+        // Get Keys() array
+        VARIANT vKeys;
+        VariantInit(&vKeys);
+        if (FAILED(DispGet(disp, L"Keys", vKeys))) return obj;
+        if (!(vKeys.vt & VT_ARRAY)) { VariantClear(&vKeys); return obj; }
+
+        SAFEARRAY* sa = vKeys.parray;
+        LONG lb = 0, ub = -1;
+        SafeArrayGetLBound(sa, 1, &lb);
+        SafeArrayGetUBound(sa, 1, &ub);
+
+        for (LONG i = lb; i <= ub; i++) {
+            VARIANT vKey;
+            VariantInit(&vKey);
+            SafeArrayGetElement(sa, &i, &vKey);
+
+            // Get Item(key)
+            VARIANT vItem;
+            VariantInit(&vItem);
+            DispGetItem(disp, vKey, vItem);
+
+            // Key → UTF-8
+            std::string k = ToUtf8(VariantToString(_variant_t(vKey)));
+            yyjson_mut_val* jkey = yyjson_mut_strncpy(doc, k.c_str(), k.size());
+
+            // Value → recursive VariantToVal
+            yyjson_mut_val* jval = VariantToVal(_variant_t(vItem));
+            if (jkey && jval) yyjson_mut_obj_add(obj, jkey, jval);
+
+            VariantClear(&vKey);
+            VariantClear(&vItem);
+        }
+
+        VariantClear(&vKeys);
+        return obj;
+    }
+
     // Case-insensitive key lookup (VBScript compat — like Dictionary CompareMode=vbTextCompare)
     // Returns the value for the first key that matches case-insensitively, or nullptr.
     yyjson_mut_val* ObjGetI(yyjson_mut_val* obj, const char* key) {
@@ -110,27 +174,34 @@ class JsonObject : public DispatchBase {
         case VT_EMPTY: return yyjson_mut_null(doc);
         case VT_DISPATCH: {
             if (v.pdispVal) {
-                // Identify JsonObject via IProvideClassInfo → GetClassInfo → GetDocumentation.
+                // Get COM class name via IProvideClassInfo to decide how to convert.
                 // Must check type name BEFORE static_cast — other COM objects (Dictionary)
                 // also implement IProvideClassInfo and an invalid cast crashes the process.
+                std::wstring className;
                 IProvideClassInfo* pci = nullptr;
                 if (SUCCEEDED(v.pdispVal->QueryInterface(IID_IProvideClassInfo, (void**)&pci))) {
-                    bool isJsonObject = false;
                     ITypeInfo* ti = nullptr;
                     if (SUCCEEDED(pci->GetClassInfo(&ti)) && ti) {
                         BSTR name = nullptr;
                         if (SUCCEEDED(ti->GetDocumentation(MEMBERID_NIL, &name, nullptr, nullptr, nullptr)) && name) {
-                            isJsonObject = (wcscmp(name, L"JsonObject") == 0);
+                            className = name;
                             SysFreeString(name);
                         }
                         ti->Release();
                     }
                     pci->Release();
-                    if (isJsonObject) {
-                        auto* jobj = static_cast<JsonObject*>(static_cast<DispatchBase*>(v.pdispVal));
-                        if (jobj->m_val)
-                            return yyjson_mut_val_mut_copy(doc, jobj->m_val);
-                    }
+                }
+
+                // JsonObject → graft JSON tree
+                if (className == L"JsonObject") {
+                    auto* jobj = static_cast<JsonObject*>(static_cast<DispatchBase*>(v.pdispVal));
+                    if (jobj->m_val)
+                        return yyjson_mut_val_mut_copy(doc, jobj->m_val);
+                }
+
+                // Scripting.Dictionary → convert to JSON object recursively
+                if (className == L"Dictionary") {
+                    return DictToVal(v.pdispVal);
                 }
             }
             return yyjson_mut_null(doc);
