@@ -1,27 +1,27 @@
 # fyjson
 
-Fast JSON parser for COM — [yyjson](https://github.com/ibireme/yyjson) engine exposed via IDispatch. Native C++, x86/x64.
+Fast JSON parser for COM — [fyjson](https://github.com/ibireme/fyjson) engine exposed via IDispatch. Native C++, x86/x64.
 
 Drop-in replacement for aspJSON and similar VBScript JSON parsers. Same API simplicity, 1000x faster.
 
 ## Quick Start
 
 ```vbs
-Set yyj = CreateObject("fyjson")
+Set fyj = CreateObject("fyjson")
 
 ' Parse
-Set obj = yyj.Parse("{""name"":""Juan"",""age"":30,""tags"":[""a"",""b""]}")
+Set obj = fyj.Parse("{""name"":""Juan"",""age"":30,""tags"":[""a"",""b""]}")
 name = obj("name")              ' "Juan"
 obj("name") = "Pedro"           ' modify
 obj("city") = "Córdoba"         ' add
 
 ' Create from scratch
-Set obj = yyj.NewObject()
+Set obj = fyj.NewObject()
 obj("id") = 1
 obj("tags") = Array("a","b","c")  ' VBS Array → JSON array
 
 ' Arrays
-Set arr = yyj.NewArray()
+Set arr = fyj.NewArray()
 arr.Add "uno"
 arr.Add 2
 arr.Add Null
@@ -32,7 +32,7 @@ For Each key In obj
 Next
 
 ' Nest objects
-Set inner = yyj.NewObject()
+Set inner = fyj.NewObject()
 inner("x") = 1
 Set obj("nested") = inner
 
@@ -101,7 +101,7 @@ Windows 7+ / Windows Server 2008 R2+. Works with any COM client: VBScript, VBA, 
 
 MIT — see [LICENSE](LICENSE).
 
-yyjson engine by [ibireme](https://github.com/ibireme/yyjson) (MIT).
+fyjson engine by [ibireme](https://github.com/ibireme/fyjson) (MIT).
 
 ---
 Jorge Pagano - Fluye
