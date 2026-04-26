@@ -31,6 +31,27 @@ class JsonObject : public DispatchBase {
 
     yyjson_mut_doc* Doc() const { return m_root ? m_root->m_doc : m_doc; }
 
+    // Case-insensitive key lookup (VBScript compat — like Dictionary CompareMode=vbTextCompare)
+    // Returns the value for the first key that matches case-insensitively, or nullptr.
+    yyjson_mut_val* ObjGetI(yyjson_mut_val* obj, const char* key) {
+        size_t idx, max;
+        yyjson_mut_val* k; yyjson_mut_val* v;
+        yyjson_mut_obj_foreach(obj, idx, max, k, v) {
+            if (_stricmp(yyjson_mut_get_str(k), key) == 0) return v;
+        }
+        return nullptr;
+    }
+
+    // Case-insensitive key find — returns the key node (for remove/put)
+    yyjson_mut_val* ObjFindKeyI(yyjson_mut_val* obj, const char* key) {
+        size_t idx, max;
+        yyjson_mut_val* k; yyjson_mut_val* v;
+        yyjson_mut_obj_foreach(obj, idx, max, k, v) {
+            if (_stricmp(yyjson_mut_get_str(k), key) == 0) return k;
+        }
+        return nullptr;
+    }
+
     HRESULT ValToVariant(yyjson_mut_val* val, _variant_t& result) {
         if (!val) { result.vt = VT_NULL; return S_OK; }
 
@@ -147,7 +168,7 @@ class JsonObject : public DispatchBase {
     HRESULT DoGet(const _variant_t& key, _variant_t& result) {
         if (yyjson_mut_is_obj(m_val)) {
             std::string k = ToUtf8(VariantToString(key));
-            return ValToVariant(yyjson_mut_obj_get(m_val, k.c_str()), result);
+            return ValToVariant(ObjGetI(m_val, k.c_str()), result);
         }
         if (yyjson_mut_is_arr(m_val)) {
             long idx = VariantToLong(key);
@@ -163,6 +184,11 @@ class JsonObject : public DispatchBase {
 
         if (yyjson_mut_is_obj(m_val)) {
             std::string k = ToUtf8(VariantToString(key));
+            // Case-insensitive: if key exists (any case), replace using original key
+            yyjson_mut_val* existingKey = ObjFindKeyI(m_val, k.c_str());
+            if (existingKey) {
+                return yyjson_mut_obj_put(m_val, existingKey, jval) ? S_OK : E_FAIL;
+            }
             yyjson_mut_val* jkey = yyjson_mut_strncpy(doc, k.c_str(), k.size());
             return yyjson_mut_obj_put(m_val, jkey, jval) ? S_OK : E_FAIL;
         }
@@ -199,7 +225,7 @@ class JsonObject : public DispatchBase {
         if (args.empty()) return E_INVALIDARG;
         if (!yyjson_mut_is_obj(m_val)) { result = VARIANT_FALSE; result.vt = VT_BOOL; return S_OK; }
         std::string k = ToUtf8(VariantToString(args[0]));
-        result = yyjson_mut_obj_get(m_val, k.c_str()) ? VARIANT_TRUE : VARIANT_FALSE;
+        result = ObjGetI(m_val, k.c_str()) ? VARIANT_TRUE : VARIANT_FALSE;
         result.vt = VT_BOOL;
         return S_OK;
     }
@@ -208,7 +234,10 @@ class JsonObject : public DispatchBase {
         if (args.empty()) return E_INVALIDARG;
         if (yyjson_mut_is_obj(m_val)) {
             std::string k = ToUtf8(VariantToString(args[0]));
-            yyjson_mut_obj_remove_key(m_val, k.c_str());
+            // Case-insensitive remove: find key first, then remove by key node
+            yyjson_mut_val* existingKey = ObjFindKeyI(m_val, k.c_str());
+            if (existingKey)
+                yyjson_mut_obj_remove_key(m_val, yyjson_mut_get_str(existingKey));
             return S_OK;
         }
         if (yyjson_mut_is_arr(m_val)) {
