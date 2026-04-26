@@ -14,12 +14,12 @@ BEGIN
         BLOCK "040904B0"
         BEGIN
             VALUE "CompanyName",      "Fluye"
-            VALUE "FileDescription",  "yyjson-com \x97 Fast JSON parser for COM"
+            VALUE "FileDescription",  "fyjson \x97 Fast JSON parser for COM"
             VALUE "FileVersion",      "1.0.0.74"
-            VALUE "InternalName",     "yyjson-com"
+            VALUE "InternalName",     "fyjson"
             VALUE "LegalCopyright",   "Copyright \xA9 2026 Fluye. MIT License."
-            VALUE "OriginalFilename", "yyjson.dll"
-            VALUE "ProductName",      "yyjson-com"
+            VALUE "OriginalFilename", "fyjson.dll"
+            VALUE "ProductName",      "fyjson"
             VALUE "ProductVersion",   "1.0.0.74"
         END
     END

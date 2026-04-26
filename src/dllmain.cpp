@@ -1,6 +1,6 @@
 // ═══════════════════════════════════════════════════════════════════════════
 // dllmain.cpp — DLL entry, COM exports, manual registry
-// yyjson-com — CreateObject("yyjson")
+// fyjson — CreateObject("fyjson")
 // ═══════════════════════════════════════════════════════════════════════════
 #include "json_object.h"
 
@@ -9,7 +9,7 @@
 LONG g_moduleRefCount = 0;
 HMODULE g_hModule = nullptr;
 
-static YyjsonClassFactory g_factory;
+static FyjsonClassFactory g_factory;
 
 // ── DLL Entry ───────────────────────────────────────────────────────────
 
@@ -24,7 +24,7 @@ BOOL WINAPI DllMain(HMODULE hModule, DWORD reason, LPVOID) {
 // ── COM Exports ─────────────────────────────────────────────────────────
 
 STDAPI DllGetClassObject(REFCLSID rclsid, REFIID riid, void** ppv) {
-    if (rclsid == CLSID_YyjsonFactory)
+    if (rclsid == CLSID_FyjsonFactory)
         return g_factory.QueryInterface(riid, ppv);
     *ppv = nullptr;
     return CLASS_E_CLASSNOTAVAILABLE;
@@ -57,7 +57,7 @@ STDAPI DllRegisterServer() {
     wchar_t dllPath[MAX_PATH];
     GetModuleFileNameW(g_hModule, dllPath, MAX_PATH);
 
-    std::wstring clsidStr = GuidToString(CLSID_YyjsonFactory);
+    std::wstring clsidStr = GuidToString(CLSID_FyjsonFactory);
 
     // HKCR\CLSID\{guid}
     std::wstring clsidKey = L"CLSID\\" + clsidStr;
@@ -72,23 +72,23 @@ STDAPI DllRegisterServer() {
     if (FAILED(hr)) return hr;
 
     // HKCR\CLSID\{guid}\ProgID
-    hr = SetRegKey(HKEY_CLASSES_ROOT, clsidKey + L"\\ProgID", nullptr, PROGID_YYJSON);
+    hr = SetRegKey(HKEY_CLASSES_ROOT, clsidKey + L"\\ProgID", nullptr, PROGID_FYJSON);
     if (FAILED(hr)) return hr;
 
     // HKCR\yyjson
-    hr = SetRegKey(HKEY_CLASSES_ROOT, PROGID_YYJSON, nullptr, DESCRIPTION);
+    hr = SetRegKey(HKEY_CLASSES_ROOT, PROGID_FYJSON, nullptr, DESCRIPTION);
     if (FAILED(hr)) return hr;
 
     // HKCR\yyjson\CLSID
     hr = SetRegKey(HKEY_CLASSES_ROOT,
-        std::wstring(PROGID_YYJSON) + L"\\CLSID", nullptr, clsidStr);
+        std::wstring(PROGID_FYJSON) + L"\\CLSID", nullptr, clsidStr);
 
     return hr;
 }
 
 STDAPI DllUnregisterServer() {
-    std::wstring clsidStr = GuidToString(CLSID_YyjsonFactory);
+    std::wstring clsidStr = GuidToString(CLSID_FyjsonFactory);
     DeleteRegTree(HKEY_CLASSES_ROOT, L"CLSID\\" + clsidStr);
-    DeleteRegTree(HKEY_CLASSES_ROOT, PROGID_YYJSON);
+    DeleteRegTree(HKEY_CLASSES_ROOT, PROGID_FYJSON);
     return S_OK;
 }

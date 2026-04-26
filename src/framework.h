@@ -1,6 +1,6 @@
 // ═══════════════════════════════════════════════════════════════════════════
 // framework.h — Common includes, GUIDs, globals
-// yyjson-com — Fast JSON parser for COM (yyjson engine, IDispatch native)
+// fyjson — Fast JSON parser for COM (yyjson engine, IDispatch native)
 // ═══════════════════════════════════════════════════════════════════════════
 #pragma once
 
@@ -19,14 +19,14 @@
 #pragma comment(lib, "comsuppw.lib")
 #pragma comment(lib, "advapi32.lib")
 
-// ── CLSID — same for x86 and x64, ProgID "yyjson" ─────────────────────
+// ── CLSID — same for x86 and x64, ProgID "fyjson" ──────────────────────
 
 // {D6947387-FAF4-464B-BA04-DA783F57B845}
-static const CLSID CLSID_YyjsonFactory =
+static const CLSID CLSID_FyjsonFactory =
     {0xD6947387, 0xFAF4, 0x464B, {0xBA,0x04,0xDA,0x78,0x3F,0x57,0xB8,0x45}};
 
-static const wchar_t* PROGID_YYJSON   = L"yyjson";
-static const wchar_t* DESCRIPTION     = L"yyjson-com — Fast JSON parser for COM";
+static const wchar_t* PROGID_FYJSON   = L"fyjson";
+static const wchar_t* DESCRIPTION     = L"fyjson — Fast JSON parser for COM";
 
 // Module globals (defined in dllmain.cpp)
 extern LONG g_moduleRefCount;

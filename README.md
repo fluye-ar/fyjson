@@ -1,4 +1,4 @@
-# yyjson-com
+# fyjson
 
 Fast JSON parser for COM — [yyjson](https://github.com/ibireme/yyjson) engine exposed via IDispatch. Native C++, x86/x64.
 
@@ -7,7 +7,7 @@ Drop-in replacement for aspJSON and similar VBScript JSON parsers. Same API simp
 ## Quick Start
 
 ```vbs
-Set yyj = CreateObject("yyjson")
+Set yyj = CreateObject("fyjson")
 
 ' Parse
 Set obj = yyj.Parse("{""name"":""Juan"",""age"":30,""tags"":[""a"",""b""]}")
@@ -42,7 +42,7 @@ WScript.Echo obj.ToString()
 
 ## API
 
-**Factory** — `CreateObject("yyjson")`
+**Factory** — `CreateObject("fyjson")`
 
 | Method | Returns | Description |
 |--------|---------|-------------|
@@ -70,8 +70,8 @@ WScript.Echo obj.ToString()
 
 Parsing + iterating search results (FluyeDoors, 2026-04-22):
 
-| Docs | JSON Size | aspJSON (VBS) | yyjson-com |
-|------|-----------|---------------|------------|
+| Docs | JSON Size | aspJSON (VBS) | fyjson |
+|------|-----------|---------------|--------|
 | 100 | 14 KB | 125 ms | 0.1 ms |
 | 1,000 | 142 KB | 7,941 ms | 0.3 ms |
 | 15,000 | 5.4 MB | crash | 7.7 ms |
@@ -80,8 +80,8 @@ Parsing + iterating search results (FluyeDoors, 2026-04-22):
 
 ```bat
 :: Register (run as admin)
-%SystemRoot%\System32\regsvr32 yyjson64.dll
-%SystemRoot%\SysWOW64\regsvr32 yyjson32.dll
+%SystemRoot%\System32\regsvr32 fyjson64.dll
+%SystemRoot%\SysWOW64\regsvr32 fyjson32.dll
 ```
 
 ## Build

@@ -1,5 +1,5 @@
 // ═══════════════════════════════════════════════════════════════════════════
-// json_object.h — JsonObject COM + YyjsonFactory (entry point)
+// json_object.h — JsonObject COM + FyjsonFactory (entry point)
 // Single type for objects, arrays and primitives. Backed by yyjson mutable.
 // Root owns yyjson_mut_doc. Subnodes AddRef the root.
 // ═══════════════════════════════════════════════════════════════════════════
@@ -338,11 +338,11 @@ public:
 
 
 // ═══════════════════════════════════════════════════════════════════════════
-// YyjsonFactory — CreateObject("yyjson") entry point
+// FyjsonFactory — CreateObject("fyjson") entry point
 // Methods: Parse, NewObject, NewArray
 // ═══════════════════════════════════════════════════════════════════════════
 
-class YyjsonFactory : public DispatchBase {
+class FyjsonFactory : public DispatchBase {
     enum DispIds {
         DID_Parse = 1,
         DID_NewObject,
@@ -395,18 +395,18 @@ protected:
     }
 
 public:
-    const wchar_t* GetClassName() const override { return L"yyjson"; }
+    const wchar_t* GetClassName() const override { return L"fyjson"; }
 };
 
 
 // ═══════════════════════════════════════════════════════════════════════════
-// COM Class Factory — creates YyjsonFactory instances
+// COM Class Factory — creates FyjsonFactory instances
 // ═══════════════════════════════════════════════════════════════════════════
 
-class YyjsonClassFactory : public IClassFactory {
+class FyjsonClassFactory : public IClassFactory {
     LONG m_ref;
 public:
-    YyjsonClassFactory() : m_ref(0) {}
+    FyjsonClassFactory() : m_ref(0) {}
     STDMETHODIMP QueryInterface(REFIID riid, void** ppv) override {
         if (riid == IID_IUnknown || riid == IID_IClassFactory) {
             *ppv = static_cast<IClassFactory*>(this); AddRef(); return S_OK;
@@ -417,7 +417,7 @@ public:
     STDMETHODIMP_(ULONG) Release() override { return InterlockedDecrement(&m_ref); }
     STDMETHODIMP CreateInstance(IUnknown* pOuter, REFIID riid, void** ppv) override {
         if (pOuter) return CLASS_E_NOAGGREGATION;
-        auto* f = new YyjsonFactory(); f->AddRef();
+        auto* f = new FyjsonFactory(); f->AddRef();
         HRESULT hr = f->QueryInterface(riid, ppv);
         f->Release(); return hr;
     }
