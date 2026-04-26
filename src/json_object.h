@@ -221,17 +221,6 @@ class JsonObject : public DispatchBase {
 
     HRESULT DoAdd(const std::vector<_variant_t>& args, _variant_t& result) {
         if (args.empty()) return E_INVALIDARG;
-        // DEBUG
-        {
-            FILE* f = nullptr;
-            _wfopen_s(&f, L"C:\\temp\\fyjson_debug.log", L"a");
-            if (f) {
-                fprintf(f, "[Add] vt=0x%04X\n", args[0].vt);
-                if (args[0].vt == VT_DISPATCH)
-                    fprintf(f, "[Add] pdispVal=%p\n", (void*)args[0].pdispVal);
-                fclose(f);
-            }
-        }
         if (yyjson_mut_is_arr(m_val)) {
             yyjson_mut_val* jval = VariantToVal(args[0]);
             if (!jval) return E_FAIL;
