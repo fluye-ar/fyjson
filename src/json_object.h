@@ -70,6 +70,10 @@ class JsonObject : public DispatchBase {
     }
 
     yyjson_mut_val* VariantToVal(const _variant_t& v) {
+        // VBScript passes objects as VT_BYREF|VT_VARIANT — dereference first
+        if (v.vt == (VT_BYREF | VT_VARIANT) && v.pvarVal)
+            return VariantToVal(_variant_t(*v.pvarVal));
+
         yyjson_mut_doc* doc = Doc();
         switch (v.vt) {
         case VT_BSTR: {
