@@ -9,6 +9,7 @@
 #include <oaidl.h>
 #include <ocidl.h>
 #include <comutil.h>
+#include <olectl.h>
 #include <string>
 #include <vector>
 #include <algorithm>
