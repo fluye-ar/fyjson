@@ -1,6 +1,6 @@
 # fyjson
 
-Fast JSON parser for COM — [fyjson](https://github.com/ibireme/fyjson) engine exposed via IDispatch. Native C++, x86/x64.
+Fast JSON parser for COM — [yyjson](https://github.com/ibireme/yyjson) engine exposed via IDispatch. Native C++, x86/x64.
 
 Drop-in replacement for aspJSON and similar VBScript JSON parsers. Same API simplicity, 1000x faster.
 
@@ -54,17 +54,52 @@ WScript.Echo obj.ToString()
 
 | Member | Type | Description |
 |--------|------|-------------|
-| `(key)` | r/w | Get/set by key (objects) |
+| `(key)` | r/w | Get/set by key (objects), case-insensitive |
 | `(index)` | r/w | Get/set by index (arrays) |
 | `Add(value)` | method | Append to array |
+| `Add(key, value)` | method | Add to object (Dictionary-compatible) |
 | `Remove(key\|index)` | method | Remove entry |
 | `Count` | int | Number of keys/items |
-| `Exists(key)` | bool | Key exists? |
+| `Exists(key)` | bool | Key exists? (case-insensitive) |
 | `IsObject` | bool | Is `{}`? |
 | `IsArray` | bool | Is `[]`? |
 | `IsNull` | bool | Is null? |
 | `ToString()` | string | Serialize to JSON |
 | `For Each` | enum | Iterate keys (objects) or values (arrays) |
+
+## Dictionary compatibility
+
+Key lookup is **case-insensitive**, like `Scripting.Dictionary` with `CompareMode = vbTextCompare`. Original key casing is preserved in serialization.
+
+```vbs
+Set obj = fyj.Parse("{""Name"":""Juan""}")
+obj("name")    ' "Juan" — case-insensitive match
+obj("NAME")    ' "Juan" — same
+obj.ToString() ' {"Name":"Juan"} — original case preserved
+```
+
+`Add(key, value)` works like Dictionary's `.Add`:
+
+```vbs
+Set obj = fyj.NewObject()
+obj.Add "name", "Juan"
+obj.Add "age", 30
+```
+
+`Scripting.Dictionary` objects passed as values are **automatically converted** to JSON objects, recursively:
+
+```vbs
+Set dict = CreateObject("Scripting.Dictionary")
+dict.Add "city", "Córdoba"
+dict.Add "zip", "5000"
+
+Set obj = fyj.NewObject()
+obj.Add "address", dict       ' Dictionary → {"city":"Córdoba","zip":"5000"}
+WScript.Echo obj.ToString()
+' {"address":{"city":"Córdoba","zip":"5000"}}
+```
+
+This allows gradual migration from Dictionary-based code without rewriting payload construction.
 
 ## Benchmark
 
@@ -101,7 +136,7 @@ Windows 7+ / Windows Server 2008 R2+. Works with any COM client: VBScript, VBA, 
 
 MIT — see [LICENSE](LICENSE).
 
-fyjson engine by [ibireme](https://github.com/ibireme/fyjson) (MIT).
+yyjson engine by [ibireme](https://github.com/ibireme/yyjson) (MIT).
 
 ---
 Jorge Pagano - Fluye
